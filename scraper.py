@@ -2,25 +2,23 @@
 import requests
 import json
 from bs4 import BeautifulSoup
-from soupsieve import select
-
-url = "https://www.ceneo.pl/91714422#tab=reviews"
+#from soupsieve import select
+product_code = input("podaj kod produktu ")
+url = "https://www.ceneo.pl/"+product_code+"#tab=reviews"
 all_opinions = []
 while(url):
-
     response = requests.get(url)
     page = BeautifulSoup(response.text, 'html.parser')
     opinions = page.select("div.js_product-review")
    
     for opinion in opinions:
-        opinion = opinions.pop(0)
+        #opinion = opinions.pop(0)
         opinion_id = opinion["data-entry-id"]
         author = opinion.select_one("span.user-post__author-name").get_text().strip()            #get_text ma nawiasy bo jest funkcją,    strip() usuwa ze zmiennej zbędne znaki białej
         try:
-            rekommendation = opinion.select_one("span.user-post__author-recomendation > em").get_text().strip()
+            recommendation = opinion.select_one("span.user-post__author-recomendation > em").get_text().strip()
         except AttributeError:
-            rekommendation = None 
-
+            recommendation = None 
         stars = opinion.select_one("span.user-post__score-count").get_text().strip()
         content = opinion.select_one("div.user-post__text").get_text().strip()
         useful = opinion.select_one('span[id^="votes-yes"]').get_text().strip()
@@ -39,7 +37,7 @@ while(url):
         single_opinion = {
             "opinion_id": opinion_id,
             "author": author,
-            "rekommendation": rekommendation,
+            "recommendation": recommendation,
             "stars": stars,
             "content": content,
             "useful": useful,
@@ -57,7 +55,7 @@ while(url):
     except TypeError:
         url = None
 
-with open("opinions/91714422.json", "w", encoding="UTF-8") as jf:
+with open("opinions/"+product_code+".json", "w", encoding="UTF-8") as jf:
     json.dump(all_opinions, jf, indent=4, ensure_ascii=False)
 
-    #print(rekommendation, stars, content, useful, useless, publish_date, purchase_date)
+    #print(recommendation, stars, content, useful, useless, publish_date, purchase_date)
