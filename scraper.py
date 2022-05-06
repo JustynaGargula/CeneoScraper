@@ -2,62 +2,54 @@
 import requests
 import json
 from bs4 import BeautifulSoup
-from soupsieve import select
+#from soupsieve import select
 
-url = "https://www.ceneo.pl/91714422#tab=reviews"
+def get_item(ancestor, selector, attribute=None, return_list=False):
+    try:
+        if return_list:
+            return [item.get_text().strip() for item in ancestor.select(selector)]
+        if attribute:
+            return ancestor.select_one(selector)[attribute]
+        return ancestor.select_one(selector).get_text().strip()
+    except (AttributeError, TypeError):
+        return None 
+
+selectors = {
+    "author": ["span.user-post__author-name"],
+    "recommendation": ["span.user-post__author-recomendation > em"],
+    "stars": ["span.user-post__score-count"],
+    "content": ["div.user-post__text"],
+    "useful": ['span[id^="votes-yes"]'],
+    "useless": ['span[id^="votes-no"]'],
+    "publish_date": ["span.user-post__published > time:nth-child(1)", "datetime"],
+    "purchase_date": ["span.user-post__published > time:nth-child(2)""datetime"],
+    "pros": ["div.review-feature__title--positives ~ div.review-feature__item", None, True],
+    "cons": ["div.review-feature__title--negatives ~ div.review-feature__item", None, True]
+
+}
+
+product_code = input("podaj kod produktu ")
+url = "https://www.ceneo.pl/"+product_code+"#tab=reviews"
 all_opinions = []
 while(url):
-
     response = requests.get(url)
     page = BeautifulSoup(response.text, 'html.parser')
     opinions = page.select("div.js_product-review")
-   
     for opinion in opinions:
-        opinion = opinions.pop(0)
-        opinion_id = opinion["data-entry-id"]
-        author = opinion.select_one("span.user-post__author-name").get_text().strip()            #get_text ma nawiasy bo jest funkcją,    strip() usuwa ze zmiennej zbędne znaki białej
-        try:
-            rekommendation = opinion.select_one("span.user-post__author-recomendation > em").get_text().strip()
-        except AttributeError:
-            rekommendation = None 
-
-        stars = opinion.select_one("span.user-post__score-count").get_text().strip()
-        content = opinion.select_one("div.user-post__text").get_text().strip()
-        useful = opinion.select_one('span[id^="votes-yes"]').get_text().strip()
-        useless = opinion.select_one('span[id^="votes-no"]').get_text().strip()
-        publish_date = opinion.select_one("span.user-post__published > time:nth-child(1)")["datetime"]
-        try:
-            purchase_date = opinion.select_one("span.user-post__published > time:nth-child(2)")["datetime"]
-        except TypeError:
-            purchase_date = None 
-
-        pros = opinion.select("div.review-feature__title--positives ~ div.review-feature__item")
-        pros = [item.get_text().strip() for item in pros]
-        cons = opinion.select("div.review-feature__title--negatives ~ div.review-feature__item")
-        cons = [item.get_text().strip() for item in cons]
-
+        
         single_opinion = {
-            "opinion_id": opinion_id,
-            "author": author,
-            "rekommendation": rekommendation,
-            "stars": stars,
-            "content": content,
-            "useful": useful,
-            "useless": useless,
-            "publish_date": publish_date,
-            "purchase_date": purchase_date,
-            "pros": pros,
-            "cons": cons
-
+            key: get_item(opinion, *value)                             #ta gwiazdka wypakowuje wartości z listy na osobne zmienne
+                for key, value in selectors.items()
         }
+        single_opinion["opinion_id"] = opinion["data-entry-id"]
         all_opinions.append(single_opinion)
 
     try:
-        url = "https://www.ceneo.pl"+page.select_one("a.paginaton__next")["href"]
+        url = "https://www.ceneo.pl"+get_item(page, "a.paginaton__next", "href")
     except TypeError:
         url = None
 
-with open("opinions/91714422.json", "w", encoding="UTF-8") as jf:
+with open("opinions/"+product_code+".json", "w", encoding="UTF-8") as jf:
     json.dump(all_opinions, jf, indent=4, ensure_ascii=False)
 
-    #print(rekommendation, stars, content, useful, useless, publish_date, purchase_date)
+    #print(recommendation, stars, content, useful, useless, publish_date, purchase_date)
