@@ -22,7 +22,7 @@ selectors = {
     "useful": ['span[id^="votes-yes"]'],
     "useless": ['span[id^="votes-no"]'],
     "publish_date": ["span.user-post__published > time:nth-child(1)", "datetime"],
-    "purchase_date": ["span.user-post__published > time:nth-child(2)""datetime"],
+    "purchase_date": ["span.user-post__published > time:nth-child(2)","datetime"],
     "pros": ["div.review-feature__title--positives ~ div.review-feature__item", None, True],
     "cons": ["div.review-feature__title--negatives ~ div.review-feature__item", None, True]
 
@@ -38,7 +38,7 @@ while(url):
     for opinion in opinions:
         
         single_opinion = {
-            key: get_item(opinion, *value)                             #ta gwiazdka wypakowuje wartości z listy na osobne zmienne
+            key:get_item(opinion, *value)                             #ta gwiazdka wypakowuje wartości z listy na osobne zmienne
                 for key, value in selectors.items()
         }
         single_opinion["opinion_id"] = opinion["data-entry-id"]
